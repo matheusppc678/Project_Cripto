@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CryptoAnalyst Pro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <style>
+    .crypto-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+    .modal-overlay {
+      backdrop-filter: blur(5px);
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <header class="text-center mb-12">
+      <h1 class="text-4xl font-bold text-gray-900 mb-2">CryptoAnalyst Pro</h1>
+      <p class="text-lg text-gray-600">Análise técnica em tempo real das principais criptomoedas</p>
+    </header>
+
+    <!-- Crypto Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6" id="cryptoGrid">
+      <!-- Cards serão inseridos via JavaScript -->
+    </div>
+
+    <!-- Best Opportunity Banner -->
+    <div id="bestOpportunity" class="mt-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-6 text-white shadow-lg hidden">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-xl font-bold">🔥 Oportunidade do Dia</h3>
+          <p id="bestCryptoInfo" class="mt-2">Carregando...</p>
+        </div>
+        <button id="bestCryptoBtn" class="bg-white text-indigo-600 px-4 py-2 rounded-lg font-medium hover:bg-gray-100 transition">
+          Ver Detalhes
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="cryptoModal" class="fixed inset-0 z-50 hidden">
+    <div class="modal-overlay absolute inset-0 bg-black bg-opacity-50"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div class="p-6">
+          <div class="flex justify-between items-start mb-6">
+            <div>
+              <h2 id="modalCryptoName" class="text-3xl font-bold flex items-center gap-3">
+                <span id="modalCryptoIcon" class="w-8 h-8 rounded-full inline-block"></span>
+                <span id="modalCryptoSymbol"></span>
+              </h2>
+              <p class="text-gray-500">Análise técnica detalhada</p>
+            </div>
+            <button id="closeModal" class="text-gray-400 hover:text-gray-600">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-gray-50 p-4 rounded-xl">
+              <p class="text-sm text-gray-500">Preço Atual</p>
+              <p id="modalCurrentPrice" class="text-2xl font-bold"></p>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-xl">
+              <p class="text-sm text-gray-500">Média 90 Dias</p>
+              <p id="modalAvgPrice" class="text-2xl font-bold"></p>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-xl">
+              <p class="text-sm text-gray-500">Previsão 30 Dias</p>
+              <p id="modalForecast" class="text-2xl font-bold"></p>
+            </div>
+          </div>
+
+          <div class="mb-8">
+            <h3 class="text-xl font-semibold mb-4">Histórico de Preços</h3>
+            <div class="h-64">
+              <canvas id="priceChart"></canvas>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 class="text-xl font-semibold mb-3">Recomendação</h3>
+              <div id="modalRecommendation" class="p-4 rounded-xl text-center">
+                <!-- Preenchido via JS -->
+              </div>
+            </div>
+            <div>
+              <h3 class="text-xl font-semibold mb-3">Análise Técnica</h3>
+              <p id="modalAnalysis" class="text-gray-700 bg-gray-50 p-4 rounded-xl">
+                <!-- Preenchido via JS -->
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Dados das criptomoedas
+    const cryptoData = [
+      { 
+        id: 'bitcoin', 
+        name: 'Bitcoin', 
+        symbol: 'BTC', 
+        currentPrice: 61200, 
+        avg90Days: 67800, 
+        forecast30Days: 68500,
+        color: '#f7931a',
+        icon: '🟠'
+      },
+      { 
+        id: 'ethereum', 
+        name: 'Ethereum', 
+        symbol: 'ETH', 
+        currentPrice: 3350, 
+        avg90Days: 3200, 
+        forecast30Days: 3400,
+        color: '#627eea',
+        icon: '🔷'
+      },
+      { 
+        id: 'solana', 
+        name: 'Solana', 
+        symbol: 'SOL', 
+        currentPrice: 185, 
+        avg90Days: 142, 
+        forecast30Days: 160,
+        color: '#00ffa3',
+        icon: '💚'
+      },
+      { 
+        id: 'bnb', 
+        name: 'BNB', 
+        symbol: 'BNB', 
+        currentPrice: 580, 
+        avg90Days: 550, 
+        forecast30Days: 620,
+        color: '#f3ba2f',
+        icon: '🟡'
+      },
+      { 
+        id: 'xrp', 
+        name: 'XRP', 
+        symbol: 'XRP', 
+        currentPrice: 0.52, 
+        avg90Days: 0.68, 
+        forecast30Days: 0.60,
+        color: '#27a2db',
+        icon: '🔵'
+      },
+      { 
+        id: 'cardano', 
+        name: 'Cardano', 
+        symbol: 'ADA', 
+        currentPrice: 0.44, 
+        avg90Days: 0.59, 
+        forecast30Days: 0.55,
+        color: '#0033ad',
+        icon: '🔷'
+      },
+      { 
+        id: 'dogecoin', 
+        name: 'Dogecoin', 
+        symbol: 'DOGE', 
+        currentPrice: 0.16, 
+        avg90Days: 0.12, 
+        forecast30Days: 0.14,
+        color: '#cb9800',
+        icon: '🐕'
+      },
+      { 
+        id: 'polkadot', 
+        name: 'Polkadot', 
+        symbol: 'DOT', 
+        currentPrice: 6.80, 
+        avg90Days: 7.50, 
+        forecast30Days: 7.20,
+        color: '#e6007a',
+        icon: '🟣'
+      },
+      { 
+        id: 'avalanche', 
+        name: 'Avalanche', 
+        symbol: 'AVAX', 
+        currentPrice: 35, 
+        avg90Days: 32, 
+        forecast30Days: 38,
+        color: '#e84142',
+        icon: '🔴'
+      },
+      { 
+        id: 'chainlink', 
+        name: 'Chainlink', 
+        symbol: 'LINK', 
+        currentPrice: 18, 
+        avg90Days: 16, 
+        forecast30Days: 20,
+        color: '#2a5ada',
+        icon: '🔗'
+      }
+    ];
+
+    // Encontrar a melhor oportunidade
+    function findBestOpportunity() {
+      let bestCrypto = null;
+      let bestPotential = 0;
+      
+      cryptoData.forEach(crypto => {
+        const potential = ((crypto.forecast30Days - crypto.currentPrice) / crypto.currentPrice) * 100;
+        if (potential > bestPotential) {
+          bestPotential = potential;
+          bestCrypto = crypto;
+        }
+      });
+      
+      return { crypto: bestCrypto, potential: bestPotential };
+    }
+
+    // Gerar cards de criptomoedas
+    function generateCryptoCards() {
+      const grid = document.getElementById('cryptoGrid');
+      grid.innerHTML = '';
+      
+      cryptoData.forEach(crypto => {
+        const card = document.createElement('div');
+        card.className = 'crypto-card bg-white rounded-xl p-6 shadow-md border border-gray-100 transition-all cursor-pointer';
+        card.style.borderLeft = `4px solid ${crypto.color}`;
+        card.dataset.id = crypto.id;
+        
+        const priceChange = ((crypto.currentPrice - crypto.avg90Days) / crypto.avg90Days * 100).toFixed(2);
+        const isPositive = parseFloat(priceChange) >= 0;
+        
+        card.innerHTML = `
+          <div class="flex items-center gap-4">
+            <span class="text-3xl">${crypto.icon}</span>
+            <div>
+              <h3 class="font-bold text-lg">${crypto.name}</h3>
+              <p class="text-gray-500">${crypto.symbol}</p>
+            </div>
+          </div>
+          <div class="mt-6">
+            <p class="text-2xl font-bold">$${crypto.currentPrice.toLocaleString()}</p>
+            <p class="text-sm ${isPositive ? 'text-green-500' : 'text-red-500'}">
+              ${isPositive ? '↑' : '↓'} ${Math.abs(priceChange)}% vs 90d
+            </p>
+          </div>
+        `;
+        
+        card.addEventListener('click', () => openModal(crypto));
+        grid.appendChild(card);
+      });
+      
+      // Mostrar melhor oportunidade
+      const best = findBestOpportunity();
+      if (best.crypto) {
+        const banner = document.getElementById('bestOpportunity');
+        const info = document.getElementById('bestCryptoInfo');
+        const button = document.getElementById('bestCryptoBtn');
+        
+        info.textContent = `${best.crypto.name} (${best.crypto.symbol}) com potencial de ${best.potential.toFixed(2)}% em 30 dias`;
+        button.addEventListener('click', () => openModal(best.crypto));
+        banner.classList.remove('hidden');
+      }
+    }
+
+    // Abrir modal com detalhes
+    function openModal(crypto) {
+      const modal = document.getElementById('cryptoModal');
+      const priceChange = ((crypto.currentPrice - crypto.avg90Days) / crypto.avg90Days * 100).toFixed(2);
+      const forecastChange = ((crypto.forecast30Days - crypto.currentPrice) / crypto.currentPrice * 100).toFixed(2);
+      
+      // Determinar recomendação
+      let recommendation, recommendationClass, analysis;
+      if (crypto.currentPrice < crypto.avg90Days * 0.9 && crypto.forecast30Days > crypto.currentPrice * 1.05) {
+        recommendation = 'COMPRAR';
+        recommendationClass = 'bg-green-100 text-green-800';
+        analysis = `Oportunidade de compra! O preço está ${Math.abs(priceChange)}% abaixo da média histórica e a previsão indica alta de ${forecastChange}% nos próximos 30 dias.`;
+      } else if (crypto.currentPrice > crypto.avg90Days * 1.15 || crypto.forecast30Days < crypto.currentPrice * 0.95) {
+        recommendation = 'VENDER';
+        recommendationClass = 'bg-red-100 text-red-800';
+        analysis = `Recomendação de venda. O preço está ${priceChange}% acima da média histórica e a previsão indica queda de ${Math.abs(forecastChange)}% nos próximos 30 dias.`;
+      } else {
+        recommendation = 'MANTER';
+        recommendationClass = 'bg-yellow-100 text-yellow-800';
+        analysis = `O preço está próximo da média histórica (${priceChange}%) com previsão de ${forecastChange >= 0 ? 'alta' : 'queda'} de ${Math.abs(forecastChange)}% nos próximos 30 dias. Mantenha sua posição.`;
+      }
+      
+      // Preencher dados do modal
+      document.getElementById('modalCryptoName').textContent = crypto.name;
+      document.getElementById('modalCryptoSymbol').textContent = crypto.symbol;
+      document.getElementById('modalCryptoIcon').style.backgroundColor = crypto.color;
+      document.getElementById('modalCurrentPrice').textContent = `$${crypto.currentPrice.toLocaleString()}`;
+      document.getElementById('modalAvgPrice').textContent = `$${crypto.avg90Days.toLocaleString()}`;
+      document.getElementById('modalForecast').textContent = `$${crypto.forecast30Days.toLocaleString()} (${forecastChange >= 0 ? '+' : ''}${forecastChange}%)`;
+      
+      const recommendationDiv = document.getElementById('modalRecommendation');
+      recommendationDiv.className = `p-4 rounded-xl text-center ${recommendationClass}`;
+      recommendationDiv.innerHTML = `
+        <p class="text-sm font-semibold mb-1">RECOMENDAÇÃO</p>
+        <p class="text-3xl font-bold">${recommendation}</p>
+        <p class="text-sm mt-2">Potencial: ${forecastChange >= 0 ? '+' : ''}${forecastChange}% em 30 dias</p>
+      `;
+      
+      document.getElementById('modalAnalysis').textContent = analysis;
+      
+      // Criar gráfico
+      createChart(crypto);
+      
+      // Mostrar modal
+      modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    // Criar gráfico de preços
+    function createChart(crypto) {
+      const ctx = document.getElementById('priceChart');
+      
+      // Limpar gráfico anterior se existir
+      if (window.priceChart) {
+        window.priceChart.destroy();
+      }
+      
+      // Gerar dados simulados
+      const labels = [];
+      const historicalData = [];
+      const forecastData = [];
+      
+      // Histórico (15 dias)
+      for (let i = 15; i > 0; i--) {
+        labels.push(`D-${i}`);
+        const basePrice = crypto.avg90Days;
+        const randomFactor = 0.95 + Math.random() * 0.1;
+        historicalData.push((basePrice * randomFactor).toFixed(2));
+      }
+      
+      // Dia atual
+      labels.push('Hoje');
+      historicalData.push(crypto.currentPrice);
+      
+      // Previsão (14 dias)
+      for (let i = 1; i <= 14; i++) {
+        labels.push(`D+${i}`);
+        const progress = i / 14;
+        const forecastPrice = crypto.currentPrice + (crypto.forecast30Days - crypto.currentPrice) * progress;
+        const randomFactor = 0.98 + Math.random() * 0.04;
+        forecastData.push((forecastPrice * randomFactor).toFixed(2));
+      }
+      
+      window.priceChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Histórico de Preços',
+              data: historicalData,
+              borderColor: crypto.color,
+              backgroundColor: 'transparent',
+              borderWidth: 2,
+              tension: 0.1
+            },
+            {
+              label: 'Previsão 30 Dias',
+              data: [historicalData[historicalData.length - 1], ...forecastData],
+              borderColor: crypto.color,
+              backgroundColor: 'transparent',
+              borderWidth: 2,
+              borderDash: [5, 5],
+              tension: 0.1
+            },
+            {
+              label: 'Média 90 Dias',
+              data: Array(labels.length).fill(crypto.avg90Days),
+              borderColor: '#9ca3af',
+              backgroundColor: 'transparent',
+              borderWidth: 1,
+              borderDash: [2, 2]
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: false
+            }
+          }
+        }
+      });
+    }
+
+    // Fechar modal
+    document.getElementById('closeModal').addEventListener('click', () => {
+      document.getElementById('cryptoModal').classList.add('hidden');
+      document.body.style.overflow = 'auto';
+    });
+
+    // Inicializar
+    document.addEventListener('DOMContentLoaded', () => {
+      generateCryptoCards();
+    });
+  </script>
+</body>
+</html>
