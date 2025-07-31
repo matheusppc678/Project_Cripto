@@ -10,12 +10,16 @@ import CryptoListPage from "./pages/CryptoListPage";
 
 const queryClient = new QueryClient();
 
+// Get the basename from the environment variable set in vite.config.ts
+// This will be '/your-repo-name/' in production on GitHub Pages, and '/' locally.
+const basename = process.env.VITE_APP_BASENAME || '/';
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter basename={basename}>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/crypto/:id" element={<CryptoDetail />} />
