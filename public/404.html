@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Crypto Analyzer</title>
+    <script>
+      // Handle client-side routing for GitHub Pages
+      (function() {
+        const path = location.pathname.replace(/^\/[^\/]+\//, '/');
+        if (path.match(/\/$/)) {
+          location.replace(path + 'index.html');
+        } else {
+          location.replace('/' + location.pathname.split('/')[1] + '/index.html');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <!-- Fallback content -->
+    <p>Redirecting...</p>
+  </body>
+</html>

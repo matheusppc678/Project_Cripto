@@ -3,6 +3,12 @@ import dyadComponentTagger from "@dyad-sh/react-vite-component-tagger";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
+// Get the repository name for GitHub Pages
+const getBase = () => {
+  const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1];
+  return repoName ? `/${repoName}/` : '/';
+};
+
 export default defineConfig(() => ({
   server: {
     host: "::",
@@ -14,6 +20,5 @@ export default defineConfig(() => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  // Add base configuration for deployment
-  base: "./",
+  base: getBase(),
 }));
