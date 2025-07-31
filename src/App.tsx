@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import CryptoDetail from "@/components/CryptoDetail";
+import Top100Cryptos from "./pages/Top100Cryptos";
 
 const queryClient = new QueryClient();
 
@@ -17,8 +18,8 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/top-100" element={<Top100Cryptos />} />
           <Route path="/crypto/:id" element={<CryptoDetail />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
