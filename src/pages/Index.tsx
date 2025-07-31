@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import CryptoList from '@/components/CryptoList';
 import { Crypto } from '@/interfaces/Crypto';
 import { fetchCryptos } from '@/services/cryptoService';
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 const Index: React.FC = () => {
   const [cryptos, setCryptos] = useState<Crypto[]>([]);
@@ -25,7 +27,15 @@ const Index: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <CryptoList cryptos={cryptos} />
+      <div className="container mx-auto p-4">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Top Criptomoedas</h1>
+          <Link to="/list">
+            <Button variant="outline">Ver Todas (100)</Button>
+          </Link>
+        </div>
+        <CryptoList cryptos={cryptos} />
+      </div>
     </div>
   );
 };
