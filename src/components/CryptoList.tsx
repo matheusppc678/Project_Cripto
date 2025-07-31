@@ -16,7 +16,10 @@ const CryptoList: React.FC<CryptoListProps> = ({ cryptos }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {cryptos.map((crypto) => {
-        const { recommendation, score } = analyzeCrypto(crypto);
+        const { recommendation, score } = analyzeCrypto({
+          currentPrice: crypto.currentPrice,
+          priceChange24h: crypto.priceChange24h
+        });
         const isPositive = (crypto.priceChange24h || 0) >= 0;
         
         return (

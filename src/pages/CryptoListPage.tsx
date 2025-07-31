@@ -76,7 +76,10 @@ const CryptoListPage: React.FC = () => {
     // Apply recommendation filter
     if (filter !== 'all') {
       result = result.filter(crypto => {
-        const { recommendation } = analyzeCrypto(crypto);
+        const { recommendation } = analyzeCrypto({
+          currentPrice: crypto.currentPrice,
+          priceChange24h: crypto.priceChange24h
+        });
         if (filter === 'buy') return recommendation === 'Comprar';
         if (filter === 'sell') return recommendation === 'Vender';
         return true;
@@ -197,7 +200,10 @@ const CryptoListPage: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {filteredCryptos.map((crypto) => {
-                  const { recommendation, score } = analyzeCrypto(crypto);
+                  const { recommendation, score } = analyzeCrypto({
+                    currentPrice: crypto.currentPrice,
+                    priceChange24h: crypto.priceChange24h
+                  });
                   const isPositive = crypto.priceChange24h >= 0;
                   
                   return (
