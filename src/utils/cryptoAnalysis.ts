@@ -2,16 +2,15 @@ import { getRecommendation } from './recommendation';
 
 export const analyzeCrypto = (
   crypto: any,
-  predicted30DayPrice?: number // New optional parameter for 30-day prediction
+  predicted30DayPrice?: number // Optional parameter for 30-day prediction
 ) => {
-  const priceChange24h = crypto.priceChange24h || 0;
   const currentPrice = crypto.currentPrice || 0;
 
   let recommendation: "Comprar" | "Vender" | "Manter" = "Manter";
   let score = 50; // Neutral default
 
   if (predicted30DayPrice !== undefined && currentPrice > 0) {
-    // New logic based on 30-day prediction
+    // Use the 30-day prediction for recommendation
     recommendation = getRecommendation(currentPrice, predicted30DayPrice);
 
     // Adjust score based on the new recommendation
@@ -23,22 +22,10 @@ export const analyzeCrypto = (
       score = 50; // Neutral
     }
   } else {
-    // Existing logic based on 24h price change (fallback for list views)
-    if (priceChange24h > 5) {
-      score = 75; // Strong buy
-    } else if (priceChange24h > 2) {
-      score = 65; // Buy
-    } else if (priceChange24h < -5) {
-      score = 25; // Strong sell
-    } else if (priceChange24h < -2) {
-      score = 35; // Sell
-    }
-
-    if (score > 60) {
-      recommendation = "Comprar";
-    } else if (score < 31) {
-      recommendation = "Vender";
-    }
+    // If 30-day prediction is not available, default to "Manter" and neutral score.
+    // The 24h price change is no longer used for recommendation logic as per user's request.
+    recommendation = "Manter";
+    score = 50;
   }
 
   return { recommendation, score: Math.round(score) };

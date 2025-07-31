@@ -123,7 +123,7 @@ const CryptoDetail: React.FC = () => {
     return Math.sqrt(variance);
   };
 
-  // Function to generate realistic predictions
+  // Function to generate realistic predictions (for chart display)
   const generateRealisticPredictions = (historicalData: HistoricalDataPoint[]): PredictionDataPoint[] => {
     const movingAverages = calculateMovingAverage(historicalData, 30);
     const volatility = calculateVolatility(historicalData);
@@ -158,7 +158,7 @@ const CryptoDetail: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-xl">Carregando detalhes da criptomoeda...</p>
+        <p className="text-xl text-muted-foreground">Carregando detalhes da criptomoeda...</p>
       </div>
     );
   }

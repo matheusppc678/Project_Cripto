@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Crypto } from '@/interfaces/Crypto';
-import { fetchCryptos } from '@/services/cryptoService';
+import { fetchCryptosWithPredictions } from '@/services/cryptoService'; // Changed import
 import { analyzeCrypto } from '@/utils/cryptoAnalysis';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,14 +23,14 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUpDown, TrendingUp, TrendingDown, Minus, Home } from 'lucide-react';
+import { ArrowUpDown, TrendingUp, TrendingDown, Home } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const CryptoListPage: React.FC = () => {
   const [cryptos, setCryptos] = useState<Crypto[]>([]);
   const [filteredCryptos, setFilteredCryptos] = useState<Crypto[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'buy' | 'sell'>('all');
+  const [filter, setFilter] = useState<'all' | 'Comprar' | 'Vender' | 'Manter'>('all'); // Updated filter options
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -38,28 +38,9 @@ const CryptoListPage: React.FC = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Update API URL to fetch 100 cryptos
-        const originalUrl = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false';
-        const response = await fetch(originalUrl);
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch crypto data');
-        }
-        
-        const data = await response.json();
-        
-        const cryptoData = data.map((crypto: any) => ({
-          id: crypto.id,
-          name: crypto.name,
-          symbol: crypto.symbol,
-          potentialProfit: calculatePotentialProfit(crypto.price_change_percentage_24h),
-          details: `Current price: $${crypto.current_price.toFixed(2)} | Market cap: $${crypto.market_cap.toLocaleString()}`,
-          currentPrice: crypto.current_price,
-          priceChange24h: crypto.price_change_percentage_24h
-        }));
-        
-        setCryptos(cryptoData);
-        setFilteredCryptos(cryptoData);
+        const data = await fetchCryptosWithPredictions(100); // Fetch top 100 with predictions
+        setCryptos(data);
+        setFilteredCryptos(data); // Initialize filtered cryptos with all data
       } catch (error) {
         console.error('Error fetching crypto data:', error);
       } finally {
@@ -76,10 +57,9 @@ const CryptoListPage: React.FC = () => {
     // Apply recommendation filter
     if (filter !== 'all') {
       result = result.filter(crypto => {
-        const { recommendation } = analyzeCrypto(crypto);
-        if (filter === 'buy') return recommendation === 'Comprar';
-        if (filter === 'sell') return recommendation === 'Vender';
-        return true;
+        // Use analyzeCrypto with the predicted30DayPrice
+        const { recommendation } = analyzeCrypto(crypto, crypto.predicted30DayPrice);
+        return recommendation === filter;
       });
     }
     
@@ -94,34 +74,32 @@ const CryptoListPage: React.FC = () => {
     // Apply sorting
     result.sort((a, b) => {
       if (sortOrder === 'asc') {
-        return a.currentPrice - b.currentPrice;
+        return (a.currentPrice || 0) - (b.currentPrice || 0);
       } else {
-        return b.currentPrice - a.currentPrice;
+        return (b.currentPrice || 0) - (a.currentPrice || 0);
       }
     });
     
     setFilteredCryptos(result);
   }, [cryptos, filter, sortOrder, searchTerm]);
 
-  const calculatePotentialProfit = (priceChange24h: number): number => {
-    return Math.min(Math.max(priceChange24h * 3, 1), 20);
-  };
-
-  const formatPrice = (price: number) => {
+  const formatPrice = (price: number | undefined) => { // Handle undefined price
+    if (price === undefined) return 'N/A';
     if (price < 1) {
       return `$${price.toFixed(6)}`;
     }
     return `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  const formatPercentage = (percentage: number) => {
+  const formatPercentage = (percentage: number | undefined) => { // Handle undefined percentage
+    if (percentage === undefined) return 'N/A';
     return `${percentage >= 0 ? '+' : ''}${percentage.toFixed(2)}%`;
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-xl">Carregando dados das criptomoedas...</p>
+        <p className="text-xl text-muted-foreground">Carregando dados das criptomoedas com previsões (isso pode levar um tempo)...</p>
       </div>
     );
   }
@@ -158,14 +136,15 @@ const CryptoListPage: React.FC = () => {
                 />
               </div>
               <div className="flex gap-2">
-                <Select value={filter} onValueChange={(value: 'all' | 'buy' | 'sell') => setFilter(value)}>
+                <Select value={filter} onValueChange={(value: 'all' | 'Comprar' | 'Vender' | 'Manter') => setFilter(value)}>
                   <SelectTrigger className="w-[120px]">
                     <SelectValue placeholder="Filtrar" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="buy">Comprar</SelectItem>
-                    <SelectItem value="sell">Vender</SelectItem>
+                    <SelectItem value="Comprar">Comprar</SelectItem>
+                    <SelectItem value="Vender">Vender</SelectItem>
+                    <SelectItem value="Manter">Manter</SelectItem>
                   </SelectContent>
                 </Select>
                 
@@ -197,8 +176,9 @@ const CryptoListPage: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {filteredCryptos.map((crypto) => {
-                  const { recommendation, score } = analyzeCrypto(crypto);
-                  const isPositive = crypto.priceChange24h >= 0;
+                  // Use analyzeCrypto with the predicted30DayPrice for recommendation
+                  const { recommendation, score } = analyzeCrypto(crypto, crypto.predicted30DayPrice);
+                  const isPositive = (crypto.priceChange24h || 0) >= 0;
                   
                   return (
                     <TableRow key={crypto.id} className="hover:bg-secondary/50">
