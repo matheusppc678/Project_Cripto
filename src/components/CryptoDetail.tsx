@@ -182,17 +182,19 @@ const CryptoDetail: React.FC = () => {
     );
   }
 
-  const { recommendation, score } = analyzeCrypto(crypto);
+  // Pass the predicted 30-day price to analyzeCrypto
+  const predicted30DayPrice = predictionData[predictionData.length - 1]?.price;
+  const { recommendation, score } = analyzeCrypto(crypto, predicted30DayPrice);
   const isPositive = crypto.priceChange24h >= 0;
 
   // Generate recommendation reason based on analysis
   let recommendationReason = "";
   if (recommendation === "Comprar") {
-    recommendationReason = "O preço está em tendência de alta nos últimos dias, com bom potencial de crescimento.";
+    recommendationReason = "Com base na previsão de 30 dias, espera-se um aumento significativo no preço, indicando uma boa oportunidade de compra.";
   } else if (recommendation === "Vender") {
-    recommendationReason = "O preço está em tendência de baixa e pode continuar caindo nos próximos dias.";
+    recommendationReason = "Com base na previsão de 30 dias, espera-se uma queda significativa no preço, sugerindo uma oportunidade de venda.";
   } else {
-    recommendationReason = "O preço está relativamente estável, sem tendência clara de alta ou baixa.";
+    recommendationReason = "A previsão de 30 dias indica que o preço deve permanecer relativamente estável, sem grandes variações.";
   }
 
   return (
