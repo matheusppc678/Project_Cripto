@@ -14,4 +14,6 @@ export default defineConfig(() => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // Add base configuration for deployment
+  base: "./",
 }));
