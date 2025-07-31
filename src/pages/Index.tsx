@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import CryptoList from '@/components/CryptoList';
 import { Crypto } from '@/interfaces/Crypto';
-import { fetchCryptos } from '@/services/cryptoService';
+import { fetchTopCryptos } from '@/services/cryptoService';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { TrendingUp } from 'lucide-react';
@@ -13,14 +13,15 @@ const Index: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const data = await fetchCryptos();
+      // Busca as top 10 criptomoedas para a página principal
+      const data = await fetchTopCryptos(10); 
       setCryptos(data);
     };
 
-    // Fetch immediately
+    // Busca imediatamente
     fetchData();
 
-    // Then every 30 minutes
+    // Em seguida, a cada 30 minutos
     const interval = setInterval(fetchData, 30 * 60 * 1000);
 
     return () => clearInterval(interval);

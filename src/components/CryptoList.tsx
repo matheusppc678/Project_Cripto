@@ -13,6 +13,19 @@ interface CryptoListProps {
 }
 
 const CryptoList: React.FC<CryptoListProps> = ({ cryptos }) => {
+  const formatPrice = (price?: number) => {
+    if (price === undefined) return 'N/A';
+    if (price < 1) {
+      return `$${price.toFixed(6)}`;
+    }
+    return `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
+  const formatPercentage = (percentage?: number) => {
+    if (percentage === undefined) return 'N/A';
+    return `${percentage >= 0 ? '+' : ''}${percentage.toFixed(2)}%`;
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {cryptos.map((crypto) => {
@@ -37,7 +50,7 @@ const CryptoList: React.FC<CryptoListProps> = ({ cryptos }) => {
                 <div>
                   <p className="text-sm text-muted-foreground">Preço Atual</p>
                   <p className="text-2xl font-bold">
-                    ${crypto.currentPrice?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || 'N/A'}
+                    {formatPrice(crypto.currentPrice)}
                   </p>
                 </div>
                 
@@ -50,7 +63,7 @@ const CryptoList: React.FC<CryptoListProps> = ({ cryptos }) => {
                       <TrendingDown className="h-4 w-4 mr-1" />
                     )}
                     <span className="font-semibold">
-                      {crypto.priceChange24h ? `${crypto.priceChange24h >= 0 ? '+' : ''}${crypto.priceChange24h.toFixed(2)}%` : 'N/A'}
+                      {formatPercentage(crypto.priceChange24h)}
                     </span>
                   </div>
                 </div>

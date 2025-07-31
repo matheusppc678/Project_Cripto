@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Crypto } from '@/interfaces/Crypto';
-import { fetchCryptos } from '@/services/cryptoService';
+import { fetchTopCryptos } from '@/services/cryptoService';
 import { analyzeCrypto } from '@/utils/cryptoAnalysis';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,7 +23,7 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUpDown, TrendingUp, TrendingDown, Minus, Home } from 'lucide-react';
+import { ArrowUpDown, TrendingUp, TrendingDown, Home } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const CryptoListPage: React.FC = () => {
@@ -38,28 +38,10 @@ const CryptoListPage: React.FC = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Update API URL to fetch 100 cryptos
-        const originalUrl = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false';
-        const response = await fetch(originalUrl);
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch crypto data');
-        }
-        
-        const data = await response.json();
-        
-        const cryptoData = data.map((crypto: any) => ({
-          id: crypto.id,
-          name: crypto.name,
-          symbol: crypto.symbol,
-          potentialProfit: calculatePotentialProfit(crypto.price_change_percentage_24h),
-          details: `Current price: $${crypto.current_price.toFixed(2)} | Market cap: $${crypto.market_cap.toLocaleString()}`,
-          currentPrice: crypto.current_price,
-          priceChange24h: crypto.price_change_percentage_24h
-        }));
-        
-        setCryptos(cryptoData);
-        setFilteredCryptos(cryptoData);
+        // Busca as top 100 criptomoedas para a página de listagem
+        const data = await fetchTopCryptos(100);
+        setCryptos(data);
+        setFilteredCryptos(data); // Inicializa a lista filtrada com todas as criptomoedas
       } catch (error) {
         console.error('Error fetching crypto data:', error);
       } finally {
@@ -73,7 +55,7 @@ const CryptoListPage: React.FC = () => {
   useEffect(() => {
     let result = [...cryptos];
     
-    // Apply recommendation filter
+    // Aplica filtro de recomendação
     if (filter !== 'all') {
       result = result.filter(crypto => {
         const { recommendation } = analyzeCrypto({
@@ -86,7 +68,7 @@ const CryptoListPage: React.FC = () => {
       });
     }
     
-    // Apply search filter
+    // Aplica filtro de busca
     if (searchTerm) {
       result = result.filter(crypto => 
         crypto.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -94,30 +76,32 @@ const CryptoListPage: React.FC = () => {
       );
     }
     
-    // Apply sorting
+    // Aplica ordenação
     result.sort((a, b) => {
+      // Lida com currentPrice potencialmente indefinido
+      const priceA = a.currentPrice ?? 0;
+      const priceB = b.currentPrice ?? 0;
+
       if (sortOrder === 'asc') {
-        return a.currentPrice - b.currentPrice;
+        return priceA - priceB;
       } else {
-        return b.currentPrice - a.currentPrice;
+        return priceB - priceA;
       }
     });
     
     setFilteredCryptos(result);
   }, [cryptos, filter, sortOrder, searchTerm]);
 
-  const calculatePotentialProfit = (priceChange24h: number): number => {
-    return Math.min(Math.max(priceChange24h * 3, 1), 20);
-  };
-
-  const formatPrice = (price: number) => {
+  const formatPrice = (price?: number) => { // Torna o preço opcional
+    if (price === undefined) return 'N/A';
     if (price < 1) {
       return `$${price.toFixed(6)}`;
     }
     return `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  const formatPercentage = (percentage: number) => {
+  const formatPercentage = (percentage?: number) => { // Torna a porcentagem opcional
+    if (percentage === undefined) return 'N/A';
     return `${percentage >= 0 ? '+' : ''}${percentage.toFixed(2)}%`;
   };
 
@@ -204,7 +188,7 @@ const CryptoListPage: React.FC = () => {
                     currentPrice: crypto.currentPrice,
                     priceChange24h: crypto.priceChange24h
                   });
-                  const isPositive = crypto.priceChange24h >= 0;
+                  const isPositive = (crypto.priceChange24h || 0) >= 0;
                   
                   return (
                     <TableRow key={crypto.id} className="hover:bg-secondary/50">

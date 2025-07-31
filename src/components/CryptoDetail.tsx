@@ -18,6 +18,7 @@ import {
   Legend
 } from 'recharts';
 import { ArrowLeft, TrendingUp, TrendingDown, Home } from 'lucide-react';
+import { fetchTopCryptos, fetchHistoricalData } from '@/services/cryptoService'; // Importa novos serviços
 
 interface HistoricalDataPoint {
   date: string;
@@ -31,7 +32,7 @@ interface PredictionDataPoint {
 }
 
 const CryptoDetail: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams<{ id: string }>(); // id será o slug (ex: "bitcoin")
   const navigate = useNavigate();
   const [crypto, setCrypto] = useState<Crypto | null>(null);
   const [historicalData, setHistoricalData] = useState<HistoricalDataPoint[]>([]);
@@ -41,69 +42,54 @@ const CryptoDetail: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!id) {
+        setLoading(false);
+        return;
+      }
+
       try {
-        // Fetch crypto details
-        const response = await fetch(`https://api.coingecko.com/api/v3/coins/${id}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch crypto data');
+        // Passo 1: Buscar as top criptomoedas para encontrar o símbolo com base no slug ID
+        const topCryptos = await fetchTopCryptos(100); // Busca o suficiente para encontrar a cripto
+        const foundCrypto = topCryptos.find(c => c.id === id);
+
+        if (!foundCrypto) {
+          setCrypto(null); // Cripto não encontrada
+          setLoading(false);
+          return;
         }
-        const data = await response.json();
-        
-        const cryptoData: Crypto = {
-          id: data.id,
-          name: data.name,
-          symbol: data.symbol,
-          potentialProfit: 0, // Will be calculated
-          details: `Current price: $${data.market_data.current_price.usd.toFixed(2)} | Market cap: $${data.market_data.market_cap.usd.toLocaleString()}`,
-          currentPrice: data.market_data.current_price.usd,
-          priceChange24h: data.market_data.price_change_percentage_24h
-        };
-        
-        setCrypto(cryptoData);
-        
-        // Fetch historical data (90 days)
-        const historicalResponse = await fetch(
-          `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=90&interval=daily`
-        );
-        
-        if (!historicalResponse.ok) {
-          throw new Error('Failed to fetch historical data');
-        }
-        
-        const historicalDataRaw = await historicalResponse.json();
-        const formattedHistoricalData = historicalDataRaw.prices.map((item: [number, number]) => ({
-          date: new Date(item[0]).toLocaleDateString('pt-BR', { month: 'short', day: 'numeric' }),
-          price: item[1]
-        }));
-        
+
+        setCrypto(foundCrypto); // Define as informações básicas da cripto
+
+        // Passo 2: Buscar dados históricos usando o símbolo encontrado
+        const formattedHistoricalData = await fetchHistoricalData(foundCrypto.symbol, 90);
         setHistoricalData(formattedHistoricalData);
-        
-        // Refined prediction algorithm
+
+        // Passo 3: Gerar previsões
         const predictedData = generateRealisticPredictions(formattedHistoricalData);
         setPredictionData(predictedData);
-        
-        // Combine historical and prediction data for chart
+
+        // Passo 4: Combinar dados históricos e de previsão para o gráfico
         const combinedData = [
           ...formattedHistoricalData,
           ...predictedData
         ];
-        
         setChartData(combinedData);
+
       } catch (error) {
-        console.error('Error fetching crypto data:', error);
+        console.error('Error fetching crypto data for detail page:', error);
+        setCrypto(null); // Indica erro ou não encontrado
       } finally {
         setLoading(false);
       }
     };
 
-    if (id) {
-      fetchData();
-    }
+    fetchData();
   }, [id]);
 
-  // Function to calculate moving average
+  // Função para calcular a média móvel
   const calculateMovingAverage = (data: HistoricalDataPoint[], period: number): number[] => {
     const movingAverages: number[] = [];
+    if (data.length < period) return []; // Dados insuficientes para o período
     for (let i = period - 1; i < data.length; i++) {
       let sum = 0;
       for (let j = 0; j < period; j++) {
@@ -114,8 +100,9 @@ const CryptoDetail: React.FC = () => {
     return movingAverages;
   };
 
-  // Function to calculate volatility
+  // Função para calcular a volatilidade
   const calculateVolatility = (data: HistoricalDataPoint[]): number => {
+    if (data.length < 2) return 0; // Necessita de pelo menos dois pontos de dados para volatilidade
     const prices = data.map(item => item.price);
     const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length;
     const squaredDifferences = prices.map(price => Math.pow(price - avgPrice, 2));
@@ -123,8 +110,10 @@ const CryptoDetail: React.FC = () => {
     return Math.sqrt(variance);
   };
 
-  // Function to generate realistic predictions
+  // Função para gerar previsões realistas
   const generateRealisticPredictions = (historicalData: HistoricalDataPoint[]): PredictionDataPoint[] => {
+    if (historicalData.length === 0) return [];
+
     const movingAverages = calculateMovingAverage(historicalData, 30);
     const volatility = calculateVolatility(historicalData);
     const lastPrice = historicalData[historicalData.length - 1].price;
@@ -135,15 +124,15 @@ const CryptoDetail: React.FC = () => {
       futureDate.setDate(futureDate.getDate() + i);
       const date = futureDate.toLocaleDateString('pt-BR', { month: 'short', day: 'numeric' });
       
-      // Use moving average as a base
+      // Usa a média móvel como base, ou o último preço se a média móvel não estiver disponível
       const basePrice = movingAverages.length > 0 ? movingAverages[movingAverages.length - 1] : lastPrice;
       
-      // Add a random fluctuation based on volatility
-      const fluctuation = (Math.random() - 0.5) * 2 * volatility;
+      // Adiciona uma flutuação aleatória baseada na volatilidade, escalada para previsão diária
+      const fluctuation = (Math.random() - 0.5) * 2 * volatility * 0.1; // Flutuação reduzida
       let predictedPrice = basePrice + fluctuation;
       
-      // Ensure the price doesn't go below zero
-      predictedPrice = Math.max(0, predictedPrice);
+      // Garante que o preço não caia abaixo de zero
+      predictedPrice = Math.max(0.000001, predictedPrice); // Menor número positivo
       
       predictedData.push({
         date: date,
@@ -188,9 +177,9 @@ const CryptoDetail: React.FC = () => {
     predictedPrice: lastPredictedPrice,
     priceChange24h: crypto.priceChange24h
   });
-  const isPositive = crypto.priceChange24h >= 0;
+  const isPositive = (crypto.priceChange24h || 0) >= 0;
 
-  // Generate recommendation reason based on analysis
+  // Gera o motivo da recomendação com base na análise
   let recommendationReason = "";
   if (recommendation === "Comprar") {
     recommendationReason = "Com base na previsão de 30 dias, o preço tem um bom potencial de valorização.";
@@ -199,6 +188,19 @@ const CryptoDetail: React.FC = () => {
   } else {
     recommendationReason = "A previsão de 30 dias indica que o preço deve permanecer relativamente estável.";
   }
+
+  const formatPrice = (price?: number) => {
+    if (price === undefined) return 'N/A';
+    if (price < 1) {
+      return `$${price.toFixed(6)}`;
+    }
+    return `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
+  const formatPercentage = (percentage?: number) => {
+    if (percentage === undefined) return 'N/A';
+    return `${percentage >= 0 ? '+' : ''}${percentage.toFixed(2)}%`;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary/20 py-8">
@@ -286,7 +288,7 @@ const CryptoDetail: React.FC = () => {
               <CardContent className="space-y-4">
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground">Preço Atual</h3>
-                  <p className="text-3xl font-bold">${crypto.currentPrice?.toFixed(2)}</p>
+                  <p className="text-3xl font-bold">{formatPrice(crypto.currentPrice)}</p>
                 </div>
                 
                 <div>
@@ -294,7 +296,7 @@ const CryptoDetail: React.FC = () => {
                   <div className={`flex items-center ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
                     {isPositive ? <TrendingUp className="h-5 w-5 mr-2" /> : <TrendingDown className="h-5 w-5 mr-2" />}
                     <span className="text-2xl font-bold">
-                      {crypto.priceChange24h ? `${crypto.priceChange24h >= 0 ? '+' : ''}${crypto.priceChange24h.toFixed(2)}%` : 'N/A'}
+                      {formatPercentage(crypto.priceChange24h)}
                     </span>
                   </div>
                 </div>
@@ -339,13 +341,13 @@ const CryptoDetail: React.FC = () => {
               {predictionData.slice(0, 15).map((item, index) => (
                 <div key={index} className="border rounded-lg p-3 text-center bg-card">
                   <p className="text-sm text-muted-foreground">{item.date}</p>
-                  <p className="font-semibold">${item.price.toFixed(2)}</p>
+                  <p className="font-semibold">{formatPrice(item.price)}</p>
                 </div>
               ))}
             </div>
             <div className="mt-6 text-center">
               <p className="text-muted-foreground">
-                Previsão baseada na tendência dos últimos 30 dias. O preço estimado em 30 dias é de <span className="font-bold">${predictionData[predictionData.length - 1]?.price.toFixed(2) || 'N/A'}</span>.
+                Previsão baseada na tendência dos últimos 30 dias. O preço estimado em 30 dias é de <span className="font-bold">{formatPrice(predictionData[predictionData.length - 1]?.price)}</span>.
               </p>
             </div>
           </CardContent>

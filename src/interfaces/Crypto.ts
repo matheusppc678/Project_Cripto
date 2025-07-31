@@ -1,7 +1,7 @@
 export interface Crypto {
-  id: string;
-  name: string;
-  symbol: string;
+  id: string; // e.g., "bitcoin" (slug para roteamento)
+  name: string; // e.g., "Bitcoin" (nome completo)
+  symbol: string; // e.g., "BTC"
   potentialProfit: number;
   details: string;
   currentPrice?: number;
