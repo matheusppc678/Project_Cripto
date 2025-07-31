@@ -1,4 +1,6 @@
 import { Crypto } from "@/interfaces/Crypto";
+import { fetchHistoricalData } from "./cryptoService"; // Importa a função de dados históricos
+import { generateRealisticPredictions } from "@/utils/cryptoAnalysis"; // Importa a função de previsão
 
 const CRYPTOCOMPARE_API_KEY = import.meta.env.VITE_CRYPTOCOMPARE_API_KEY;
 const BASE_URL = 'https://min-api.cryptocompare.com/data';
@@ -7,6 +9,7 @@ const headers = CRYPTOCOMPARE_API_KEY ? { 'authorization': `Apikey ${CRYPTOCOMPA
 
 /**
  * Busca as top N criptomoedas por capitalização de mercado e seus detalhes de preço.
+ * Inclui a previsão de preço de 30 dias para cada criptomoeda.
  * @param limit O número de criptomoedas a serem buscadas (padrão: 100).
  * @returns Uma promessa que resolve para um array de objetos Crypto.
  */
@@ -27,20 +30,37 @@ export const fetchTopCryptos = async (limit: number = 100): Promise<Crypto[]> =>
     const symbols = data.Data.map((item: any) => item.CoinInfo.Name);
     const detailedPrices = await fetchCryptoPrices(symbols);
 
-    return data.Data.map((item: any) => {
+    const cryptosWithPredictions: Crypto[] = [];
+
+    for (const item of data.Data) {
       const symbol = item.CoinInfo.Name;
       const priceData = detailedPrices.find(dp => dp.symbol.toUpperCase() === symbol.toUpperCase());
 
-      return {
+      let predictedPrice: number | undefined;
+      try {
+        // Busca dados históricos para gerar a previsão
+        const historical = await fetchHistoricalData(symbol, 90); // 90 dias para previsão
+        if (historical.length > 0) {
+          const predictions = generateRealisticPredictions(historical);
+          predictedPrice = predictions[predictions.length - 1]?.price; // Último preço previsto
+        }
+      } catch (histError) {
+        console.error(`Error fetching historical data or generating prediction for ${symbol}:`, histError);
+        // Continua mesmo se a previsão falhar para uma cripto
+      }
+
+      cryptosWithPredictions.push({
         id: item.CoinInfo.FullName.toLowerCase().replace(/\s/g, '-'), // Cria um slug para o ID de roteamento
         name: item.CoinInfo.FullName,
         symbol: symbol,
         potentialProfit: calculatePotentialProfit(priceData?.priceChange24h || 0),
         details: `Current price: $${priceData?.currentPrice?.toFixed(2) || 'N/A'} | Market cap: $${item.RAW?.USD?.MKTCAP?.toLocaleString() || 'N/A'}`,
         currentPrice: priceData?.currentPrice,
-        priceChange24h: priceData?.priceChange24h
-      };
-    });
+        priceChange24h: priceData?.priceChange24h,
+        predictedPrice: predictedPrice // Adiciona o preço previsto
+      });
+    }
+    return cryptosWithPredictions;
 
   } catch (error) {
     console.error('Error fetching top crypto data:', error);

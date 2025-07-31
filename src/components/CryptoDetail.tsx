@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Crypto } from '@/interfaces/Crypto';
-import { analyzeCrypto } from '@/utils/cryptoAnalysis';
+import { getRecommendationAndScore, generateRealisticPredictions } from '@/utils/cryptoAnalysis'; // Importa as funções centralizadas
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +18,7 @@ import {
   Legend
 } from 'recharts';
 import { ArrowLeft, TrendingUp, TrendingDown, Home } from 'lucide-react';
-import { fetchTopCryptos, fetchHistoricalData } from '@/services/cryptoService'; // Importa novos serviços
+import { fetchTopCryptos, fetchHistoricalData } from '@/services/cryptoService';
 
 interface HistoricalDataPoint {
   date: string;
@@ -64,7 +64,7 @@ const CryptoDetail: React.FC = () => {
         const formattedHistoricalData = await fetchHistoricalData(foundCrypto.symbol, 90);
         setHistoricalData(formattedHistoricalData);
 
-        // Passo 3: Gerar previsões
+        // Passo 3: Gerar previsões usando a função centralizada
         const predictedData = generateRealisticPredictions(formattedHistoricalData);
         setPredictionData(predictedData);
 
@@ -85,64 +85,6 @@ const CryptoDetail: React.FC = () => {
 
     fetchData();
   }, [id]);
-
-  // Função para calcular a média móvel
-  const calculateMovingAverage = (data: HistoricalDataPoint[], period: number): number[] => {
-    const movingAverages: number[] = [];
-    if (data.length < period) return []; // Dados insuficientes para o período
-    for (let i = period - 1; i < data.length; i++) {
-      let sum = 0;
-      for (let j = 0; j < period; j++) {
-        sum += data[i - j].price;
-      }
-      movingAverages.push(sum / period);
-    }
-    return movingAverages;
-  };
-
-  // Função para calcular a volatilidade
-  const calculateVolatility = (data: HistoricalDataPoint[]): number => {
-    if (data.length < 2) return 0; // Necessita de pelo menos dois pontos de dados para volatilidade
-    const prices = data.map(item => item.price);
-    const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length;
-    const squaredDifferences = prices.map(price => Math.pow(price - avgPrice, 2));
-    const variance = squaredDifferences.reduce((a, b) => a + b, 0) / prices.length;
-    return Math.sqrt(variance);
-  };
-
-  // Função para gerar previsões realistas
-  const generateRealisticPredictions = (historicalData: HistoricalDataPoint[]): PredictionDataPoint[] => {
-    if (historicalData.length === 0) return [];
-
-    const movingAverages = calculateMovingAverage(historicalData, 30);
-    const volatility = calculateVolatility(historicalData);
-    const lastPrice = historicalData[historicalData.length - 1].price;
-    const predictedData: PredictionDataPoint[] = [];
-    
-    for (let i = 1; i <= 30; i++) {
-      const futureDate = new Date();
-      futureDate.setDate(futureDate.getDate() + i);
-      const date = futureDate.toLocaleDateString('pt-BR', { month: 'short', day: 'numeric' });
-      
-      // Usa a média móvel como base, ou o último preço se a média móvel não estiver disponível
-      const basePrice = movingAverages.length > 0 ? movingAverages[movingAverages.length - 1] : lastPrice;
-      
-      // Adiciona uma flutuação aleatória baseada na volatilidade, escalada para previsão diária
-      const fluctuation = (Math.random() - 0.5) * 2 * volatility * 0.1; // Flutuação reduzida
-      let predictedPrice = basePrice + fluctuation;
-      
-      // Garante que o preço não caia abaixo de zero
-      predictedPrice = Math.max(0.000001, predictedPrice); // Menor número positivo
-      
-      predictedData.push({
-        date: date,
-        price: predictedPrice,
-        predicted: true
-      });
-    }
-    
-    return predictedData;
-  };
 
   if (loading) {
     return (
@@ -172,10 +114,9 @@ const CryptoDetail: React.FC = () => {
   }
 
   const lastPredictedPrice = predictionData.length > 0 ? predictionData[predictionData.length - 1].price : undefined;
-  const { recommendation, score } = analyzeCrypto({
+  const { recommendation, score } = getRecommendationAndScore({ // Usa a função centralizada
     currentPrice: crypto.currentPrice,
     predictedPrice: lastPredictedPrice,
-    priceChange24h: crypto.priceChange24h
   });
   const isPositive = (crypto.priceChange24h || 0) >= 0;
 

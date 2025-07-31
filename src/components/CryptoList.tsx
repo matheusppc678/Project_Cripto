@@ -3,7 +3,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Crypto } from '@/interfaces/Crypto';
-import { analyzeCrypto } from '@/utils/cryptoAnalysis';
+import { getRecommendationAndScore } from '@/utils/cryptoAnalysis'; // Importa a nova função
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown } from 'lucide-react';
@@ -29,9 +29,9 @@ const CryptoList: React.FC<CryptoListProps> = ({ cryptos }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {cryptos.map((crypto) => {
-        const { recommendation, score } = analyzeCrypto({
+        const { recommendation, score } = getRecommendationAndScore({
           currentPrice: crypto.currentPrice,
-          priceChange24h: crypto.priceChange24h
+          predictedPrice: crypto.predictedPrice // Agora predictedPrice está disponível
         });
         const isPositive = (crypto.priceChange24h || 0) >= 0;
         

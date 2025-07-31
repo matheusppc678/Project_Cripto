@@ -6,4 +6,5 @@ export interface Crypto {
   details: string;
   currentPrice?: number;
   priceChange24h?: number;
+  predictedPrice?: number; // Novo campo para a previsão de 30 dias
 }

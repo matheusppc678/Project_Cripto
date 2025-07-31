@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Crypto } from '@/interfaces/Crypto';
 import { fetchTopCryptos } from '@/services/cryptoService';
-import { analyzeCrypto } from '@/utils/cryptoAnalysis';
+import { getRecommendationAndScore } from '@/utils/cryptoAnalysis'; // Importa a nova função
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -58,9 +58,9 @@ const CryptoListPage: React.FC = () => {
     // Aplica filtro de recomendação
     if (filter !== 'all') {
       result = result.filter(crypto => {
-        const { recommendation } = analyzeCrypto({
+        const { recommendation } = getRecommendationAndScore({
           currentPrice: crypto.currentPrice,
-          priceChange24h: crypto.priceChange24h
+          predictedPrice: crypto.predictedPrice // Agora predictedPrice está disponível
         });
         if (filter === 'buy') return recommendation === 'Comprar';
         if (filter === 'sell') return recommendation === 'Vender';
@@ -184,9 +184,9 @@ const CryptoListPage: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {filteredCryptos.map((crypto) => {
-                  const { recommendation, score } = analyzeCrypto({
+                  const { recommendation, score } = getRecommendationAndScore({
                     currentPrice: crypto.currentPrice,
-                    priceChange24h: crypto.priceChange24h
+                    predictedPrice: crypto.predictedPrice // Agora predictedPrice está disponível
                   });
                   const isPositive = (crypto.priceChange24h || 0) >= 0;
                   
