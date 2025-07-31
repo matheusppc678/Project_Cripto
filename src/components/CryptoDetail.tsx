@@ -78,25 +78,8 @@ const CryptoDetail: React.FC = () => {
         
         setHistoricalData(formattedHistoricalData);
         
-        // Generate prediction data for next 30 days
-        const lastPrice = formattedHistoricalData[formattedHistoricalData.length - 1].price;
-        const priceChangePercentage = data.market_data.price_change_percentage_30d || 0;
-        const predictedData: PredictionDataPoint[] = [];
-        
-        // Generate 30 days of predictions
-        for (let i = 1; i <= 30; i++) {
-          // Simple linear projection based on 30-day change
-          const predictedPrice = lastPrice * (1 + (priceChangePercentage / 30) * i / 100);
-          const futureDate = new Date();
-          futureDate.setDate(futureDate.getDate() + i);
-          
-          predictedData.push({
-            date: futureDate.toLocaleDateString('pt-BR', { month: 'short', day: 'numeric' }),
-            price: predictedPrice,
-            predicted: true
-          });
-        }
-        
+        // Refined prediction algorithm
+        const predictedData = generateRealisticPredictions(formattedHistoricalData);
         setPredictionData(predictedData);
         
         // Combine historical and prediction data for chart
@@ -117,6 +100,60 @@ const CryptoDetail: React.FC = () => {
       fetchData();
     }
   }, [id]);
+
+  // Function to calculate moving average
+  const calculateMovingAverage = (data: HistoricalDataPoint[], period: number): number[] => {
+    const movingAverages: number[] = [];
+    for (let i = period - 1; i < data.length; i++) {
+      let sum = 0;
+      for (let j = 0; j < period; j++) {
+        sum += data[i - j].price;
+      }
+      movingAverages.push(sum / period);
+    }
+    return movingAverages;
+  };
+
+  // Function to calculate volatility
+  const calculateVolatility = (data: HistoricalDataPoint[]): number => {
+    const prices = data.map(item => item.price);
+    const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length;
+    const squaredDifferences = prices.map(price => Math.pow(price - avgPrice, 2));
+    const variance = squaredDifferences.reduce((a, b) => a + b, 0) / prices.length;
+    return Math.sqrt(variance);
+  };
+
+  // Function to generate realistic predictions
+  const generateRealisticPredictions = (historicalData: HistoricalDataPoint[]): PredictionDataPoint[] => {
+    const movingAverages = calculateMovingAverage(historicalData, 30);
+    const volatility = calculateVolatility(historicalData);
+    const lastPrice = historicalData[historicalData.length - 1].price;
+    const predictedData: PredictionDataPoint[] = [];
+    
+    for (let i = 1; i <= 30; i++) {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + i);
+      const date = futureDate.toLocaleDateString('pt-BR', { month: 'short', day: 'numeric' });
+      
+      // Use moving average as a base
+      const basePrice = movingAverages.length > 0 ? movingAverages[movingAverages.length - 1] : lastPrice;
+      
+      // Add a random fluctuation based on volatility
+      const fluctuation = (Math.random() - 0.5) * 2 * volatility;
+      let predictedPrice = basePrice + fluctuation;
+      
+      // Ensure the price doesn't go below zero
+      predictedPrice = Math.max(0, predictedPrice);
+      
+      predictedData.push({
+        date: date,
+        price: predictedPrice,
+        predicted: true
+      });
+    }
+    
+    return predictedData;
+  };
 
   if (loading) {
     return (
