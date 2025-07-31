@@ -4,4 +4,6 @@ export interface Crypto {
   symbol: string;
   potentialProfit: number;
   details: string;
+  currentPrice?: number;
+  priceChange24h?: number;
 }
