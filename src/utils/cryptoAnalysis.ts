@@ -1,31 +1,26 @@
-import { getRecommendation } from './recommendation';
+export const analyzeCrypto = (crypto: any) => {
+  // Use the 24h price change as a base for our analysis
+  const priceChange = crypto.priceChange24h || 0;
+  
+  // Calculate attractiveness score based on price change
+  let score = 50; // Neutral
 
-export const analyzeCrypto = (
-  crypto: any,
-  predicted30DayPrice?: number // Optional parameter for 30-day prediction
-) => {
-  const currentPrice = crypto.currentPrice || 0;
+  if (priceChange > 5) {
+    score = 75; // Strong buy
+  } else if (priceChange > 2) {
+    score = 65; // Buy
+  } else if (priceChange < -5) {
+    score = 25; // Strong sell
+  } else if (priceChange < -2) {
+    score = 35; // Sell
+  }
 
-  let recommendation: "Comprar" | "Vender" | "Manter" = "Manter";
-  let score = 50; // Neutral default
-
-  if (predicted30DayPrice !== undefined && currentPrice > 0) {
-    // Use the 30-day prediction for recommendation
-    recommendation = getRecommendation(currentPrice, predicted30DayPrice);
-
-    // Adjust score based on the new recommendation
-    if (recommendation === "Comprar") {
-      score = 80; // High score for strong buy
-    } else if (recommendation === "Vender") {
-      score = 20; // Low score for strong sell
-    } else {
-      score = 50; // Neutral
-    }
-  } else {
-    // If 30-day prediction is not available, default to "Manter" and neutral score.
-    // The 24h price change is no longer used for recommendation logic as per user's request.
-    recommendation = "Manter";
-    score = 50;
+  // Recommendation
+  let recommendation = "Manter";
+  if (score > 60) {
+    recommendation = "Comprar";
+  } else if (score < 31) {
+    recommendation = "Vender";
   }
 
   return { recommendation, score: Math.round(score) };

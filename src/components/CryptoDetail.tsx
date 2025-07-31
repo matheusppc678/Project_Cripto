@@ -123,7 +123,7 @@ const CryptoDetail: React.FC = () => {
     return Math.sqrt(variance);
   };
 
-  // Function to generate realistic predictions (for chart display)
+  // Function to generate realistic predictions
   const generateRealisticPredictions = (historicalData: HistoricalDataPoint[]): PredictionDataPoint[] => {
     const movingAverages = calculateMovingAverage(historicalData, 30);
     const volatility = calculateVolatility(historicalData);
@@ -158,7 +158,7 @@ const CryptoDetail: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-xl text-muted-foreground">Carregando detalhes da criptomoeda...</p>
+        <p className="text-xl">Carregando detalhes da criptomoeda...</p>
       </div>
     );
   }
@@ -182,19 +182,17 @@ const CryptoDetail: React.FC = () => {
     );
   }
 
-  // Pass the predicted 30-day price to analyzeCrypto
-  const predicted30DayPrice = predictionData[predictionData.length - 1]?.price;
-  const { recommendation, score } = analyzeCrypto(crypto, predicted30DayPrice);
+  const { recommendation, score } = analyzeCrypto(crypto);
   const isPositive = crypto.priceChange24h >= 0;
 
   // Generate recommendation reason based on analysis
   let recommendationReason = "";
   if (recommendation === "Comprar") {
-    recommendationReason = "Com base na previsão de 30 dias, espera-se um aumento significativo no preço, indicando uma boa oportunidade de compra.";
+    recommendationReason = "O preço está em tendência de alta nos últimos dias, com bom potencial de crescimento.";
   } else if (recommendation === "Vender") {
-    recommendationReason = "Com base na previsão de 30 dias, espera-se uma queda significativa no preço, sugerindo uma oportunidade de venda.";
+    recommendationReason = "O preço está em tendência de baixa e pode continuar caindo nos próximos dias.";
   } else {
-    recommendationReason = "A previsão de 30 dias indica que o preço deve permanecer relativamente estável, sem grandes variações.";
+    recommendationReason = "O preço está relativamente estável, sem tendência clara de alta ou baixa.";
   }
 
   return (

@@ -6,5 +6,4 @@ export interface Crypto {
   details: string;
   currentPrice?: number;
   priceChange24h?: number;
-  predicted30DayPrice?: number; // NEW: Predicted price in 30 days
 }
