@@ -17,7 +17,7 @@ import {
   ResponsiveContainer,
   Legend
 } from 'recharts';
-import { ArrowLeft, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, Home } from 'lucide-react';
 
 interface HistoricalDataPoint {
   date: string;
@@ -120,19 +120,27 @@ const CryptoDetail: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-4">
-        <p>Carregando detalhes da criptomoeda...</p>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-xl">Carregando detalhes da criptomoeda...</p>
       </div>
     );
   }
 
   if (!crypto) {
     return (
-      <div className="container mx-auto p-4">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
         <h1 className="text-2xl font-bold mb-4">Criptomoeda não encontrada</h1>
-        <Button onClick={() => navigate(-1)} variant="outline">
-          Voltar
-        </Button>
+        <div className="flex gap-4">
+          <Button onClick={() => navigate(-1)} variant="outline">
+            Voltar
+          </Button>
+          <Link to="/">
+            <Button>
+              <Home className="h-4 w-4 mr-2" />
+              Ir para Home
+            </Button>
+          </Link>
+        </div>
       </div>
     );
   }
@@ -151,136 +159,156 @@ const CryptoDetail: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="flex items-center mb-6">
-        <Button onClick={() => navigate(-1)} variant="outline" className="mr-4">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Voltar
-        </Button>
-        <h1 className="text-3xl font-bold">{crypto.name} ({crypto.symbol.toUpperCase()})</h1>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-background to-secondary/20 py-8">
+      <div className="container mx-auto">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">{crypto.name} ({crypto.symbol.toUpperCase()})</h1>
+            <p className="text-muted-foreground">Análise detalhada e previsões</p>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={() => navigate(-1)} variant="outline" className="flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Voltar
+            </Button>
+            <Link to="/">
+              <Button className="flex items-center gap-2">
+                <Home className="h-4 w-4" />
+                Home
+              </Button>
+            </Link>
+          </div>
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <Card className="lg:col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Preço Atual e Previsão</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={chartData}
+                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis 
+                      dataKey="date" 
+                      tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+                      interval={Math.floor(chartData.length / 10)}
+                    />
+                    <YAxis 
+                      domain={['auto', 'auto']} 
+                      tickFormatter={(value) => `$${value.toFixed(2)}`}
+                      tick={{ fill: "hsl(var(--muted-foreground))" }}
+                    />
+                    <Tooltip 
+                      formatter={(value) => [`$${Number(value).toFixed(2)}`, 'Preço']}
+                      labelFormatter={(label) => `Data: ${label}`}
+                      contentStyle={{ 
+                        backgroundColor: "hsl(var(--background))", 
+                        borderColor: "hsl(var(--border))",
+                        borderRadius: "var(--radius)",
+                        color: "hsl(var(--foreground))"
+                      }}
+                    />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="price"
+                      stroke="hsl(var(--primary))"
+                      activeDot={{ r: 8 }}
+                      name="Histórico"
+                      strokeWidth={2}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="price"
+                      stroke="hsl(var(--accent))"
+                      strokeDasharray="3 3"
+                      name="Previsão"
+                      strokeWidth={2}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Informações Atuais</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Preço Atual</h3>
+                  <p className="text-3xl font-bold">${crypto.currentPrice?.toFixed(2)}</p>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Variação 24h</h3>
+                  <div className={`flex items-center ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                    {isPositive ? <TrendingUp className="h-5 w-5 mr-2" /> : <TrendingDown className="h-5 w-5 mr-2" />}
+                    <span className="text-2xl font-bold">
+                      {crypto.priceChange24h ? `${crypto.priceChange24h >= 0 ? '+' : ''}${crypto.priceChange24h.toFixed(2)}%` : 'N/A'}
+                    </span>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Recomendação</h3>
+                  <Badge 
+                    variant={recommendation === 'Comprar' ? 'default' : recommendation === 'Vender' ? 'destructive' : 'secondary'}
+                    className="text-lg py-2 px-4 mt-1"
+                  >
+                    {recommendation}
+                  </Badge>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Pontuação de Atratividade</h3>
+                  <div className="flex items-center mt-1">
+                    <span className="text-3xl font-bold">{score}</span>
+                    <span className="text-muted-foreground ml-1 text-lg">/100</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Motivo da Recomendação</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">{recommendationReason}</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        <Card>
           <CardHeader>
-            <CardTitle>Preço Atual e Previsão</CardTitle>
+            <CardTitle>Previsão Estimada para 30 Dias</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={chartData}
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="date" 
-                    tick={{ fontSize: 12 }}
-                    interval={Math.floor(chartData.length / 10)}
-                  />
-                  <YAxis 
-                    domain={['auto', 'auto']} 
-                    tickFormatter={(value) => `$${value.toFixed(2)}`}
-                  />
-                  <Tooltip 
-                    formatter={(value) => [`$${Number(value).toFixed(2)}`, 'Preço']}
-                    labelFormatter={(label) => `Data: ${label}`}
-                  />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="price"
-                    stroke="#8884d8"
-                    activeDot={{ r: 8 }}
-                    name="Histórico"
-                    strokeWidth={2}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="price"
-                    stroke="#82ca9d"
-                    strokeDasharray="3 3"
-                    name="Previsão"
-                    strokeWidth={2}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+              {predictionData.slice(0, 15).map((item, index) => (
+                <div key={index} className="border rounded-lg p-3 text-center bg-card">
+                  <p className="text-sm text-muted-foreground">{item.date}</p>
+                  <p className="font-semibold">${item.price.toFixed(2)}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 text-center">
+              <p className="text-muted-foreground">
+                Previsão baseada na tendência dos últimos 30 dias. O preço estimado em 30 dias é de <span className="font-bold">${predictionData[predictionData.length - 1]?.price.toFixed(2) || 'N/A'}</span>.
+              </p>
             </div>
           </CardContent>
         </Card>
-
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Informações Atuais</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold">Preço Atual</h3>
-                <p className="text-2xl font-bold">${crypto.currentPrice.toFixed(2)}</p>
-              </div>
-              
-              <div>
-                <h3 className="text-lg font-semibold">Variação 24h</h3>
-                <div className={`flex items-center ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-                  {isPositive ? <TrendingUp className="h-5 w-5 mr-1" /> : <TrendingDown className="h-5 w-5 mr-1" />}
-                  <span className="text-xl font-semibold">
-                    {crypto.priceChange24h >= 0 ? '+' : ''}{crypto.priceChange24h?.toFixed(2)}%
-                  </span>
-                </div>
-              </div>
-              
-              <div>
-                <h3 className="text-lg font-semibold">Recomendação</h3>
-                <Badge 
-                  variant={recommendation === 'Comprar' ? 'default' : recommendation === 'Vender' ? 'destructive' : 'secondary'}
-                  className="text-lg py-2 px-4"
-                >
-                  {recommendation}
-                </Badge>
-              </div>
-              
-              <div>
-                <h3 className="text-lg font-semibold">Pontuação de Atratividade</h3>
-                <div className="flex items-center">
-                  <span className="text-2xl font-bold">{score}</span>
-                  <span className="text-muted-foreground ml-1">/100</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Motivo da Recomendação</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">{recommendationReason}</p>
-            </CardContent>
-          </Card>
-        </div>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Previsão Estimada para 30 Dias</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {predictionData.slice(0, 15).map((item, index) => (
-              <div key={index} className="border rounded p-3 text-center">
-                <p className="text-sm text-muted-foreground">{item.date}</p>
-                <p className="font-semibold">${item.price.toFixed(2)}</p>
-              </div>
-            ))}
-          </div>
-          <div className="mt-4 text-center">
-            <p className="text-muted-foreground">
-              Previsão baseada na tendência dos últimos 30 dias. O preço estimado em 30 dias é de <span className="font-bold">${predictionData[predictionData.length - 1]?.price.toFixed(2) || 'N/A'}</span>.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };

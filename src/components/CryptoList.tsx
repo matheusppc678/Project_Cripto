@@ -4,6 +4,9 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Crypto } from '@/interfaces/Crypto';
 import { analyzeCrypto } from '@/utils/cryptoAnalysis';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { TrendingUp, TrendingDown } from 'lucide-react';
 
 interface CryptoListProps {
   cryptos: Crypto[];
@@ -11,22 +14,71 @@ interface CryptoListProps {
 
 const CryptoList: React.FC<CryptoListProps> = ({ cryptos }) => {
   return (
-    <div className="container mx-auto p-4">
-      <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {cryptos.map((crypto) => {
-          const { recommendation, score } = analyzeCrypto(crypto);
-          return (
-            <li key={crypto.id} className="bg-white shadow rounded-lg p-4">
-              <Link to={`/crypto/${crypto.id}`} className="block hover:bg-gray-100 transition-colors duration-200">
-                <h2 className="text-lg font-semibold">{crypto.name} ({crypto.symbol.toUpperCase()})</h2>
-                <p className="text-gray-600">Potencial de Lucro: {crypto.potentialProfit.toFixed(2)}%</p>
-                <p className="text-blue-500">Recomendação: {recommendation}</p>
-                <p className="text-gray-500">Pontuação: {score}</p>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {cryptos.map((crypto) => {
+        const { recommendation, score } = analyzeCrypto(crypto);
+        const isPositive = (crypto.priceChange24h || 0) >= 0;
+        
+        return (
+          <Card key={crypto.id} className="overflow-hidden hover:scale-[1.02] transition-transform duration-300">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center justify-between">
+                <span className="text-lg truncate">{crypto.name}</span>
+                <span className="text-sm font-mono bg-secondary px-2 py-1 rounded">
+                  {crypto.symbol.toUpperCase()}
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Preço Atual</p>
+                  <p className="text-2xl font-bold">
+                    ${crypto.currentPrice?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || 'N/A'}
+                  </p>
+                </div>
+                
+                <div>
+                  <p className="text-sm text-muted-foreground">Variação 24h</p>
+                  <div className={`flex items-center ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                    {isPositive ? (
+                      <TrendingUp className="h-4 w-4 mr-1" />
+                    ) : (
+                      <TrendingDown className="h-4 w-4 mr-1" />
+                    )}
+                    <span className="font-semibold">
+                      {crypto.priceChange24h ? `${crypto.priceChange24h >= 0 ? '+' : ''}${crypto.priceChange24h.toFixed(2)}%` : 'N/A'}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Recomendação</p>
+                    <Badge 
+                      variant={recommendation === 'Comprar' ? 'default' : recommendation === 'Vender' ? 'destructive' : 'secondary'}
+                      className="mt-1"
+                    >
+                      {recommendation}
+                    </Badge>
+                  </div>
+                  
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground">Pontuação</p>
+                    <p className="text-lg font-bold">{score}<span className="text-muted-foreground text-sm">/100</span></p>
+                  </div>
+                </div>
+                
+                <Link to={`/crypto/${crypto.id}`} className="block mt-4">
+                  <div className="w-full py-2 text-center text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
+                    Ver Detalhes
+                  </div>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 };

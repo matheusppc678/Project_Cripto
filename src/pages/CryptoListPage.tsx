@@ -23,7 +23,8 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUpDown, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { ArrowUpDown, TrendingUp, TrendingDown, Minus, Home } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const CryptoListPage: React.FC = () => {
   const [cryptos, setCryptos] = useState<Crypto[]>([]);
@@ -119,107 +120,126 @@ const CryptoListPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-4">
-        <p>Loading...</p>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-xl">Carregando dados das criptomoedas...</p>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Top 100 Criptomoedas</h1>
-        <Link to="/">
-          <Button variant="outline">Voltar para Home</Button>
-        </Link>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <div className="flex-1">
-          <Input
-            placeholder="Buscar criptomoeda..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <div className="flex gap-2">
-          <Select value={filter} onValueChange={(value: 'all' | 'buy' | 'sell') => setFilter(value)}>
-            <SelectTrigger className="w-[120px]">
-              <SelectValue placeholder="Filtrar" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="buy">Comprar</SelectItem>
-              <SelectItem value="sell">Vender</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Button 
-            variant="outline" 
-            onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-          >
-            <ArrowUpDown className="h-4 w-4 mr-2" />
-            Preço {sortOrder === 'asc' ? '↑' : '↓'}
-          </Button>
-        </div>
-      </div>
-
-      {/* Crypto Table */}
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead>Preço</TableHead>
-              <TableHead>Variação 24h</TableHead>
-              <TableHead>Recomendação</TableHead>
-              <TableHead>Pontuação</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredCryptos.map((crypto) => {
-              const { recommendation, score } = analyzeCrypto(crypto);
-              const isPositive = crypto.priceChange24h >= 0;
-              
-              return (
-                <TableRow key={crypto.id}>
-                  <TableCell className="font-medium">
-                    <Link to={`/crypto/${crypto.id}`} className="hover:underline">
-                      {crypto.name} ({crypto.symbol.toUpperCase()})
-                    </Link>
-                  </TableCell>
-                  <TableCell>{formatPrice(crypto.currentPrice)}</TableCell>
-                  <TableCell>
-                    <div className={`flex items-center ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-                      {isPositive ? <TrendingUp className="h-4 w-4 mr-1" /> : <TrendingDown className="h-4 w-4 mr-1" />}
-                      {formatPercentage(crypto.priceChange24h)}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge 
-                      variant={recommendation === 'Comprar' ? 'default' : recommendation === 'Vender' ? 'destructive' : 'secondary'}
-                    >
-                      {recommendation}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center">
-                      {score}
-                      <span className="ml-1 text-muted-foreground">/100</span>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-        
-        {filteredCryptos.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">
-            Nenhuma criptomoeda encontrada com os filtros aplicados.
+    <div className="min-h-screen bg-gradient-to-br from-background to-secondary/20 py-8">
+      <div className="container mx-auto">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">Top 100 Criptomoedas</h1>
+            <p className="text-muted-foreground">Análise completa das principais criptomoedas do mercado</p>
           </div>
-        )}
+          <Link to="/">
+            <Button variant="outline" className="flex items-center gap-2">
+              <Home className="h-4 w-4" />
+              Voltar para Home
+            </Button>
+          </Link>
+        </div>
+
+        {/* Filters */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Filtros</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1">
+                <Input
+                  placeholder="Buscar criptomoeda..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Select value={filter} onValueChange={(value: 'all' | 'buy' | 'sell') => setFilter(value)}>
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue placeholder="Filtrar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="buy">Comprar</SelectItem>
+                    <SelectItem value="sell">Vender</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                  className="flex items-center gap-2"
+                >
+                  <ArrowUpDown className="h-4 w-4" />
+                  Preço {sortOrder === 'asc' ? '↑' : '↓'}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Crypto Table */}
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Preço</TableHead>
+                  <TableHead>Variação 24h</TableHead>
+                  <TableHead>Recomendação</TableHead>
+                  <TableHead>Pontuação</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredCryptos.map((crypto) => {
+                  const { recommendation, score } = analyzeCrypto(crypto);
+                  const isPositive = crypto.priceChange24h >= 0;
+                  
+                  return (
+                    <TableRow key={crypto.id} className="hover:bg-secondary/50">
+                      <TableCell className="font-medium">
+                        <Link to={`/crypto/${crypto.id}`} className="hover:underline hover:text-primary transition-colors">
+                          {crypto.name} ({crypto.symbol.toUpperCase()})
+                        </Link>
+                      </TableCell>
+                      <TableCell>{formatPrice(crypto.currentPrice)}</TableCell>
+                      <TableCell>
+                        <div className={`flex items-center ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                          {isPositive ? <TrendingUp className="h-4 w-4 mr-1" /> : <TrendingDown className="h-4 w-4 mr-1" />}
+                          {formatPercentage(crypto.priceChange24h)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={recommendation === 'Comprar' ? 'default' : recommendation === 'Vender' ? 'destructive' : 'secondary'}
+                        >
+                          {recommendation}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center">
+                          {score}
+                          <span className="ml-1 text-muted-foreground">/100</span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+            
+            {filteredCryptos.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                Nenhuma criptomoeda encontrada com os filtros aplicados.
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
