@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Crypto } from '@/interfaces/Crypto';
-import { getRecommendationAndScore, generateRealisticPredictions } from '@/utils/cryptoAnalysis'; // Importa as funções centralizadas
+import { getRecommendationAndScore, generateRealisticPredictions, calculateMovingAverage } from '@/utils/cryptoAnalysis'; // Importa as funções centralizadas
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -65,7 +65,7 @@ const CryptoDetail: React.FC = () => {
         setHistoricalData(formattedHistoricalData);
 
         // Passo 3: Gerar previsões usando a função centralizada
-        const predictedData = generateRealisticPredictions(formattedHistoricalData);
+        const predictedData = generateRealisticPredictionsWithSmoothing(formattedHistoricalData);
         setPredictionData(predictedData);
 
         // Passo 4: Combinar dados históricos e de previsão para o gráfico
@@ -85,6 +85,46 @@ const CryptoDetail: React.FC = () => {
 
     fetchData();
   }, [id]);
+
+  const generateRealisticPredictionsWithSmoothing = (historicalData: HistoricalDataPoint[]): PredictionDataPoint[] => {
+    if (historicalData.length === 0) return [];
+  
+    const smoothingPeriod = 7; // Use the last 7 days for smoothing
+    const lastRealPrice = historicalData[historicalData.length - 1].price;
+  
+    // Calculate moving average for the last 'smoothingPeriod' days
+    const lastPrices = historicalData.slice(-smoothingPeriod).map(item => item.price);
+    const initialPredictionBase = lastPrices.reduce((sum, price) => sum + price, 0) / lastPrices.length;
+  
+    const predictedData: PredictionDataPoint[] = [];
+  
+    for (let i = 1; i <= 30; i++) {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + i);
+      const date = futureDate.toLocaleDateString('pt-BR', { month: 'short', day: 'numeric' });
+  
+      // For the first prediction point, use a blend of the last real price and the initial prediction base
+      let predictedPrice: number;
+      if (i === 1) {
+        predictedPrice = (0.5 * lastRealPrice) + (0.5 * initialPredictionBase); // 50% blend
+      } else {
+        // After the first point, use the standard prediction logic
+        const volatility = 0.05; // Adjust as needed
+        const fluctuation = (Math.random() - 0.5) * 2 * volatility * initialPredictionBase;
+        predictedPrice = initialPredictionBase + fluctuation;
+      }
+  
+      predictedPrice = Math.max(0.000001, predictedPrice); // Ensure price is not negative
+  
+      predictedData.push({
+        date: date,
+        price: predictedPrice,
+        predicted: true
+      });
+    }
+  
+    return predictedData;
+  };
 
   if (loading) {
     return (

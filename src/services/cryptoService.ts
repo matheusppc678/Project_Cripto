@@ -1,5 +1,5 @@
 import { Crypto } from "@/interfaces/Crypto";
-import { fetchHistoricalData } from "./cryptoService"; // Importa a função de dados históricos
+// import { fetchHistoricalData } from "./cryptoService"; // Importa a função de dados históricos REMOVE THIS LINE
 import { generateRealisticPredictions } from "@/utils/cryptoAnalysis"; // Importa a função de previsão
 
 const CRYPTOCOMPARE_API_KEY = import.meta.env.VITE_CRYPTOCOMPARE_API_KEY;
